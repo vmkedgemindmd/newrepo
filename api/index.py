@@ -283,6 +283,7 @@ def classify_from_features(features: dict, seed: int) -> dict:
 
 
 @app.get("/api/health")
+@app.get("/health")
 def health_check():
     return {
         "status": "online",
@@ -293,6 +294,7 @@ def health_check():
 
 
 @app.post("/api/predict")
+@app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     contents = await file.read()
 
