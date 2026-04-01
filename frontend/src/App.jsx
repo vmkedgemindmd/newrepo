@@ -83,7 +83,9 @@ export default function App() {
       console.error(err);
       setError({
         type: 'network',
-        message: 'Could not connect to the analysis server. Make sure the backend is running on port 8000.',
+        message: err.message.includes('fetch') 
+          ? 'Could not connect to the analysis server. The API might be offline or blocked by a firewall.'
+          : `Analysis Failed: ${err.message}`,
       });
     } finally {
       setIsAnalyzing(false);
