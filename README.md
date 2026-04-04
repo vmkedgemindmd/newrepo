@@ -8,14 +8,13 @@ Upload a photo of a tomato leaf → Get an instant diagnosis with treatment reco
 
 ## 🌟 Features
 
-- **Real AI Classification** — Uses a ViT (Vision Transformer) model fine-tuned on the PlantVillage dataset
-- **99.67% Accuracy** — Trained on thousands of expert-labeled tomato leaf images
-- **10 Disease Classes** — Bacterial Spot, Early Blight, Late Blight, Leaf Mold, Septoria Leaf Spot, Spider Mites, Target Spot, Yellow Leaf Curl Virus, Mosaic Virus, and Healthy
-- **Smart Validation** — Rejects non-leaf images (human photos, objects, blank images) with helpful error messages
-- **Treatment Recommendations** — Provides disease descriptions, severity levels, and treatment advice
-- **Probability Distribution** — Shows confidence scores across all 10 disease classes
-- **Modern UI** — Premium dark theme with glassmorphism, animations, and responsive design
-- **Drag & Drop Upload** — Easy image upload with preview
+- **Real AI Model** — ViT (Vision Transformer) fine-tuned on PlantVillage dataset
+- **99.67% Accuracy** — Trained on thousands of expert-labeled leaf images
+- **10 Disease Classes** — Bacterial Spot, Early Blight, Late Blight, Leaf Mold, Septoria Leaf Spot, Spider Mites, Target Spot, Yellow Leaf Curl Virus, Mosaic Virus, Healthy
+- **Smart Validation** — Rejects non-leaf images (human photos, objects, blanks)
+- **Treatment Info** — Severity, description, and treatment for each disease
+- **Dual Deployment** — Works on Vercel (HF API) or Render (local model)
+- **Modern UI** — Dark theme, glassmorphism, drag-and-drop upload
 
 ---
 
@@ -23,32 +22,25 @@ Upload a photo of a tomato leaf → Get an instant diagnosis with treatment reco
 
 | Component | Technology |
 |-----------|-----------|
-| **Frontend** | React 19 + Vite 5 |
-| **Backend** | FastAPI (Python) |
-| **ML Model** | ViT (google/vit-base-patch16-224) fine-tuned on PlantVillage |
-| **ML Framework** | PyTorch + Hugging Face Transformers |
-| **Image Processing** | OpenCV, Pillow |
-| **Styling** | Vanilla CSS (dark theme, glassmorphism) |
+| Frontend | React 19 + Vite 5 |
+| Backend | FastAPI (Python) |
+| ML Model | ViT (`google/vit-base-patch16-224`) fine-tuned on PlantVillage |
+| ML Framework | PyTorch + Hugging Face Transformers |
+| Image Processing | OpenCV, Pillow |
 
 ---
 
 ## 📦 Prerequisites
 
-Before you begin, make sure you have the following installed:
+- **Python 3.10+** — [python.org](https://www.python.org/downloads/)
+- **Node.js 18+** — [nodejs.org](https://nodejs.org/)
+- **Git** — [git-scm.com](https://git-scm.com/)
 
-- **Python 3.10+** — [Download Python](https://www.python.org/downloads/)
-- **Node.js 18+** — [Download Node.js](https://nodejs.org/)
-- **pip** (comes with Python)
-- **npm** (comes with Node.js)
-- **Git** — [Download Git](https://git-scm.com/)
-
-To verify your installations, open **PowerShell** and run:
-
+Verify in PowerShell:
 ```powershell
 python --version
 node --version
 npm --version
-git --version
 ```
 
 ---
@@ -58,14 +50,8 @@ git --version
 ### Step 1: Clone the Repository
 
 ```powershell
-git clone https://github.com/YOUR_USERNAME/leaf_detection.git
-cd leaf_detection/newrepo
-```
-
-Or if you already have the project:
-
-```powershell
-cd d:\leaf_detection\newrepo
+git clone https://github.com/vmkedgemindmd/newrepo.git
+cd newrepo
 ```
 
 ### Step 2: Install Python Dependencies
@@ -74,27 +60,21 @@ cd d:\leaf_detection\newrepo
 pip install -r requirements.txt
 ```
 
-This installs:
-- `fastapi` — Web API framework
-- `uvicorn` — ASGI server
-- `pillow` — Image processing
-- `numpy` — Numerical computing
-- `opencv-python-headless` — Computer vision (leaf validation)
-- `torch` — PyTorch (ML framework)
-- `transformers` — Hugging Face Transformers (model loading)
-- `python-multipart` — File upload support
-
-### Step 3: Download the ML Model
-
-The ViT model (~343 MB) is **automatically downloaded** from Hugging Face the first time you start the backend. No manual download needed!
-
-However, if you want to **pre-download** the model before starting:
+Then install PyTorch and Transformers for local model:
 
 ```powershell
-python -c "from transformers import pipeline; pipeline('image-classification', model='wellCh4n/tomato-leaf-disease-classification-vit', device='cpu'); print('Model downloaded successfully!')"
+pip install torch transformers
 ```
 
-> **Note:** The model is cached at `C:\Users\<YourUsername>\.cache\huggingface\hub\` and only downloads once. Subsequent starts are fast.
+### Step 3: Download the ML Model (Auto)
+
+The model (~343 MB) downloads **automatically** on first start. To pre-download:
+
+```powershell
+python -c "from transformers import pipeline; pipeline('image-classification', model='wellCh4n/tomato-leaf-disease-classification-vit', device='cpu'); print('Done!')"
+```
+
+> The model caches at `C:\Users\<YOU>\.cache\huggingface\hub\` — only downloads once.
 
 ### Step 4: Install Frontend Dependencies
 
@@ -104,62 +84,181 @@ npm install
 cd ..
 ```
 
-### Step 5: Start the Backend Server
+### Step 5: Start the Backend (Terminal 1)
 
 ```powershell
 python -m uvicorn api.index:app --reload --port 8000
 ```
 
-Wait until you see:
+Wait for:
 ```
-Loading ViT model for tomato leaf disease classification...
 Model loaded successfully!
 INFO:     Uvicorn running on http://127.0.0.1:8000
 ```
 
-### Step 6: Start the Frontend Dev Server
-
-Open a **new PowerShell window** and run:
+### Step 6: Start the Frontend (Terminal 2)
 
 ```powershell
-cd d:\leaf_detection\newrepo\frontend
+cd frontend
 npx vite --port 5173
 ```
 
-Wait until you see:
-```
-VITE v5.x.x  ready in XXX ms
-
-  ➜  Local:   http://localhost:5173/
-```
-
 ### Step 7: Open the App
-
-Open your browser and go to:
 
 ```
 http://localhost:5173/
 ```
 
-🎉 **That's it! Upload a tomato leaf image and get your diagnosis!**
+🎉 **Upload a tomato leaf image and get your diagnosis!**
 
 ---
 
-## 🧪 Quick Test via API (PowerShell)
+## 🌐 Deployment Options
 
-You can also test the API directly without the frontend:
+The backend supports **two modes** controlled by the `USE_HF_API` environment variable:
 
-**Health Check:**
+| Mode | `USE_HF_API` | How It Works | Best For |
+|------|-------------|-------------|----------|
+| **Local Model** | `false` (default) | Loads ViT model into memory | Local dev, Render |
+| **HF API** | `true` | Calls Hugging Face Inference API | Vercel |
+
+---
+
+### Option A: Deploy on Vercel (HF API Mode)
+
+Vercel can't load the large PyTorch model, so it calls the Hugging Face API instead.
+
+#### Step 1: Install Vercel CLI
+
 ```powershell
-Invoke-RestMethod -Uri http://127.0.0.1:8000/api/health | ConvertTo-Json
+npm install -g vercel
 ```
 
-**Predict (with image file):**
+#### Step 2: Login to Vercel
+
 ```powershell
-$filePath = "C:\path\to\your\leaf-image.jpg"
-$form = @{ file = Get-Item $filePath }
-Invoke-RestMethod -Uri http://127.0.0.1:8000/api/predict -Method Post -Form $form | ConvertTo-Json -Depth 5
+vercel login
 ```
+
+#### Step 3: Get a Hugging Face API Token (Free)
+
+1. Go to [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+2. Click **"New token"**
+3. Name it `tomatoai`, select **"Read"** access
+4. Copy the token (starts with `hf_...`)
+
+#### Step 4: Set Environment Variables on Vercel
+
+```powershell
+cd d:\leaf_detection\newrepo
+vercel env add USE_HF_API
+# When prompted, enter: true
+# Select: Production, Preview, Development
+
+vercel env add HF_API_TOKEN
+# When prompted, paste your hf_... token
+# Select: Production, Preview, Development
+```
+
+#### Step 5: Deploy
+
+```powershell
+vercel --prod
+```
+
+#### How It Works on Vercel
+
+```
+User → Vercel Frontend (React)
+         ↓
+       Vercel Serverless Function (FastAPI, lightweight)
+         ↓
+       Hugging Face Inference API (runs the real ViT model)
+         ↓
+       Returns diagnosis back to user
+```
+
+> **Note:** The HF free API has rate limits. For production use, consider upgrading to HF Pro ($9/month) or using Render instead.
+
+---
+
+### Option B: Deploy on Render (Local Model, Recommended)
+
+Render runs the full model locally — no API limits, full control.
+
+#### Step 1: Create a Render Account
+
+Go to [render.com](https://render.com/) and sign up (free).
+
+#### Step 2: Connect Your GitHub Repo
+
+1. In Render dashboard, click **"New" → "Web Service"**
+2. Connect your GitHub account
+3. Select the `newrepo` repository
+
+#### Step 3: Configure the Service
+
+| Setting | Value |
+|---------|-------|
+| **Name** | `tomatoai-backend` |
+| **Region** | Pick closest to you |
+| **Branch** | `main` |
+| **Root Directory** | _(leave empty)_ |
+| **Runtime** | `Python 3` |
+| **Build Command** | `pip install -r requirements-render.txt` |
+| **Start Command** | `uvicorn api.index:app --host 0.0.0.0 --port $PORT` |
+
+#### Step 4: Add Environment Variable
+
+In **Environment** tab:
+| Key | Value |
+|-----|-------|
+| `USE_HF_API` | `false` |
+
+#### Step 5: Deploy
+
+Click **"Create Web Service"**. Render will:
+1. Install dependencies (~5 min)
+2. Download the ViT model (~2 min)
+3. Start the server
+
+You'll get a URL like: `https://tomatoai-backend.onrender.com`
+
+#### Step 6: Deploy Frontend on Vercel
+
+Now point your frontend to the Render backend:
+
+```powershell
+cd d:\leaf_detection\newrepo
+
+# Set the API URL to your Render backend
+vercel env add VITE_API_URL
+# Enter: https://tomatoai-backend.onrender.com
+# Select: Production, Preview, Development
+
+# Deploy frontend
+vercel --prod
+```
+
+#### Step 7: Update Frontend Vite Config for Production
+
+The frontend already reads `VITE_API_URL` from environment:
+```javascript
+// In App.jsx — this line handles it:
+const API_BASE = import.meta.env.VITE_API_URL || '';
+```
+
+#### How It Works on Render
+
+```
+User → Vercel Frontend (React)
+         ↓
+       Render Backend (FastAPI + ViT model loaded in memory)
+         ↓
+       Returns diagnosis back to user
+```
+
+> **Note:** Render free tier sleeps after 15 min of inactivity. First request after sleep takes ~30s to load the model.
 
 ---
 
@@ -168,37 +267,39 @@ Invoke-RestMethod -Uri http://127.0.0.1:8000/api/predict -Method Post -Form $for
 ```
 newrepo/
 ├── api/
-│   └── index.py              # FastAPI backend with ViT model
+│   └── index.py                # FastAPI backend (dual-mode)
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx            # Main React component
-│   │   ├── index.css          # Global styles (dark theme)
-│   │   ├── main.jsx           # React entry point
+│   │   ├── App.jsx             # Main React component
+│   │   ├── index.css           # Dark theme styles
+│   │   ├── main.jsx            # Entry point
 │   │   └── components/
-│   │       └── ProbabilityChart.jsx  # Bar chart component
-│   ├── index.html             # HTML entry
-│   ├── vite.config.js         # Vite config with API proxy
-│   └── package.json           # Frontend dependencies
-├── requirements.txt           # Python dependencies
-├── package.json               # Root scripts
-├── vercel.json                # Vercel deployment config
-└── README.md                  # This file
+│   │       └── ProbabilityChart.jsx
+│   ├── index.html
+│   ├── vite.config.js          # Vite + API proxy
+│   └── package.json
+├── requirements.txt            # Vercel deps (lightweight)
+├── requirements-render.txt     # Render deps (full, with PyTorch)
+├── vercel.json                 # Vercel deployment config
+├── render.yaml                 # Render deployment config
+├── package.json                # Root scripts
+└── README.md
 ```
 
 ---
 
-## 🧠 About the ML Model
+## 🧠 ML Model Details
 
-| Property | Details |
-|----------|---------|
-| **Model** | Vision Transformer (ViT) |
-| **Base** | `google/vit-base-patch16-224-in21k` |
-| **Fine-tuned on** | PlantVillage Tomato Leaf Disease Dataset |
-| **Accuracy** | **99.67%** on evaluation set |
-| **Loss** | 0.0170 |
-| **Classes** | 10 (9 diseases + 1 healthy) |
-| **Input Size** | 224 × 224 pixels |
-| **Source** | [Hugging Face](https://huggingface.co/wellCh4n/tomato-leaf-disease-classification-vit) |
+| Property | Value |
+|----------|-------|
+| Architecture | Vision Transformer (ViT) |
+| Base Model | `google/vit-base-patch16-224-in21k` |
+| Training Data | PlantVillage Tomato Leaf Disease Dataset |
+| Accuracy | **99.67%** |
+| Loss | 0.0170 |
+| Input Size | 224 × 224 px |
+| Classes | 10 |
+| Source | [HuggingFace](https://huggingface.co/wellCh4n/tomato-leaf-disease-classification-vit) |
 
 ### Disease Classes
 
@@ -217,63 +318,22 @@ newrepo/
 
 ---
 
-## 🔒 Leaf Validation
-
-The app validates uploaded images before classification:
-
-- ✅ **Accepted**: Close-up photos of tomato leaves
-- ❌ **Rejected**: Human photos (skin tone detection)
-- ❌ **Rejected**: Blank/white images
-- ❌ **Rejected**: Objects, buildings, text screenshots
-- ❌ **Rejected**: Images without plant-like colors
-
----
-
-## 🌐 Deployment (Vercel)
-
-The project includes `vercel.json` for deployment:
-
-```powershell
-npm install -g vercel
-vercel --prod
-```
-
-> **Note:** For Vercel deployment, the ML model will be downloaded during the build. Make sure your Vercel plan supports the model size.
-
----
-
 ## 📝 API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET`  | `/api/health` | Health check, model info |
-| `POST` | `/api/predict` | Upload image, get diagnosis |
+| `GET` | `/api/health` | Health check + model info |
+| `POST` | `/api/predict` | Upload image → get diagnosis |
 
-### POST /api/predict
+### PowerShell API Test
 
-**Request:** `multipart/form-data` with `file` field (JPG/PNG image)
+```powershell
+# Health check
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/health | ConvertTo-Json
 
-**Success Response:**
-```json
-{
-  "success": true,
-  "diagnosis": "Yellow Leaf Curl Virus",
-  "confidence": 98.45,
-  "probabilities": { ... },
-  "severity": "Critical",
-  "description": "TYLCV transmitted by whiteflies...",
-  "treatment": "Control whiteflies with insecticides...",
-  "is_leaf": true
-}
-```
-
-**Error Response (non-leaf image):**
-```json
-{
-  "success": false,
-  "message": "This appears to be a photo of a person, not a plant leaf.",
-  "is_leaf": false
-}
+# Predict
+$form = @{ file = Get-Item "C:\path\to\leaf.jpg" }
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/predict -Method Post -Form $form | ConvertTo-Json -Depth 5
 ```
 
 ---
@@ -281,11 +341,9 @@ vercel --prod
 ## 🤝 Credits
 
 - **Model**: [wellCh4n/tomato-leaf-disease-classification-vit](https://huggingface.co/wellCh4n/tomato-leaf-disease-classification-vit)
-- **Dataset**: [PlantVillage Dataset](https://github.com/spMohanty/PlantVillage-Dataset)
+- **Dataset**: [PlantVillage](https://github.com/spMohanty/PlantVillage-Dataset)
 - **Base Model**: [Google ViT](https://huggingface.co/google/vit-base-patch16-224-in21k)
-
----
 
 ## 📄 License
 
-This project is for educational purposes. The ML model is licensed under Apache 2.0.
+Educational use. ML model is Apache 2.0 licensed.
