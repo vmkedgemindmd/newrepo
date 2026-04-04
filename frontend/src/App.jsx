@@ -17,229 +17,261 @@ const DISEASE_ICONS = {
   'Healthy': '✅',
 };
 
+const STATS = [
+  { value: '10', label: 'Disease Classes' },
+  { value: 'CV', label: 'Detection Engine' },
+  { value: '<1s', label: 'Analysis Time' },
+];
+
 export default function App() {
   const [imageFile, setImageFile] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [apiStatus, setApiStatus] = useState('online');
-
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
+  // ── Handle file selection ──────────────────────────────────────
   const handleFile = useCallback((file) => {
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setError({ type: 'format', message: 'Please upload a valid image file (JPG, PNG, JPEG).' });
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setError({ type: 'format', message: 'Please upload a valid image file (JPG, PNG, JPEG, WEBP).' });
+      setImageFile(null);
+      setImageUrl(null);
+      setResult(null);
       return;
     }
+
     setImageFile(file);
     setImageUrl(URL.createObjectURL(file));
     setResult(null);
     setError(null);
   }, []);
 
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    handleFile(file);
-  }, [handleFile]);
-
-  const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = () => setIsDragging(false);
-
-  const handleFileInput = (e) => handleFile(e.target.files[0]);
-
-  const clearImage = () => {
+  // ── Clear everything ───────────────────────────────────────────
+  const clearImage = useCallback(() => {
     setImageFile(null);
     setImageUrl(null);
     setResult(null);
     setError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  }, []);
+
+  // ── Drag & Drop handlers ──────────────────────────────────────
+  const onDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
+  const onDragLeave = () => setIsDragging(false);
+  const onDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) handleFile(files[0]);
   };
 
-  const handleAnalyze = async () => {
+  // ── Analyze leaf ───────────────────────────────────────────────
+  const analyzeLeaf = async () => {
     if (!imageFile) return;
+
     setIsAnalyzing(true);
     setResult(null);
     setError(null);
 
-    const formData = new FormData();
-    formData.append('file', imageFile);
-
     try {
+      const formData = new FormData();
+      formData.append('file', imageFile);
+
       const res = await fetch(`${API_BASE}/api/predict`, {
         method: 'POST',
         body: formData,
       });
 
-      if (!res.ok) throw new Error(`Server responded with status ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`Server responded with status ${res.status}`);
+      }
 
       const data = await res.json();
-      setResult(data);
+
+      if (data.success) {
+        setResult(data);
+        setError(null);
+      } else {
+        setResult(null);
+        setError({ type: 'not_leaf', message: data.message });
+      }
     } catch (err) {
-      console.error(err);
-      setError({
-        type: 'network',
-        message: err.message.includes('fetch') 
-          ? 'Could not connect to the analysis server. The API might be offline or blocked by a firewall.'
-          : `Analysis Failed: ${err.message}`,
-      });
+      const msg = err.message || 'Unknown error';
+      if (msg.includes('fetch') || msg.includes('Failed') || msg.includes('NetworkError')) {
+        setError({
+          type: 'network',
+          message: 'Could not connect to the analysis server. Make sure the API is running (uvicorn api.index:app --reload).',
+        });
+      } else {
+        setError({ type: 'server', message: `Analysis failed: ${msg}` });
+      }
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const isHealthy = result?.diagnosis === 'Healthy';
-  const diagClass = isHealthy ? 'healthy' : 'diseased';
+  const diagClass = result
+    ? result.diagnosis === 'Healthy' ? 'healthy' : 'disease'
+    : '';
 
   return (
-    <div className="app-wrapper">
-      {/* Background Orbs */}
+    <div className="app">
+      {/* Background orbs */}
       <div className="bg-orbs">
         <div className="bg-orb bg-orb-1" />
         <div className="bg-orb bg-orb-2" />
         <div className="bg-orb bg-orb-3" />
       </div>
 
-      {/* Header */}
-      <header className="header">
-        <div className="container">
-          <div className="header-inner">
-            <div className="logo">
-              <div className="logo-icon">🍅</div>
-              <div className="logo-text">
-                TomatoAI
-                <span>Leaf Disease Detection</span>
-              </div>
-            </div>
-            <div className="status-badge">
-              <div className="status-dot" />
-              AI Engine Active
-            </div>
+      {/* Navbar */}
+      <nav className="navbar">
+        <div className="container navbar-inner">
+          <div className="nav-brand">
+            <span className="nav-logo">🍅</span>
+            <span className="nav-title">TomatoAI</span>
+          </div>
+          <div className="nav-links">
+            <span className="nav-link active">Detect</span>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Hero */}
-      <section className="hero">
+      {/* Main */}
+      <main className="main">
         <div className="container">
-          <div className="hero-badge">
-            ✨ Powered by Xception Deep Learning
-          </div>
-          <h1>
-            Detect Tomato Leaf
-            <br />
-            <span className="highlight">Diseases Instantly</span>
-          </h1>
-          <p>
-            Upload a photo of your tomato plant leaf and get an instant AI-powered diagnosis
-            across 10 disease categories with treatment recommendations.
-          </p>
-        </div>
-      </section>
 
-      {/* Stats Row */}
-      <div className="container">
-        <div className="stats-row">
-          {[
-            { num: '10', label: 'Disease Classes' },
-            { num: '99%', label: 'Accuracy Rate' },
-            { num: '<1s', label: 'Detection Time' },
-          ].map(({ num, label }) => (
-            <div key={label} className="glass-card stat-card">
-              <div className="stat-number">{num}</div>
-              <div className="stat-label">{label}</div>
+          {/* Hero */}
+          <section className="hero">
+            <div className="hero-badge">
+              <span className="hero-badge-dot" />
+              AI-Powered Disease Detection
             </div>
-          ))}
-        </div>
-      </div>
+            <h1 className="hero-title">
+              Detect Tomato Leaf<br />
+              Diseases <span className="gradient-text">Instantly</span>
+            </h1>
+            <p className="hero-subtitle">
+              Upload a photo of your tomato plant leaf and get an instant AI-powered diagnosis
+              with treatment recommendations.
+            </p>
 
-      {/* Main Content */}
-      <main className="container">
-        <div className="main-grid">
-          {/* Upload Card */}
-          <div className="glass-card">
-            <div className="card-header">
-              <div className="card-icon blue">📤</div>
-              <div>
-                <div className="card-title">Upload Leaf Image</div>
-                <div className="card-subtitle">JPG, PNG, or JPEG supported</div>
+            {/* Stats row */}
+            <div className="stats-row">
+              {STATS.map(({ value, label }) => (
+                <div key={label} className="glass-card stat-card">
+                  <div className="stat-value">{value}</div>
+                  <div className="stat-label">{label}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Two-column layout */}
+          <div className="grid-2col">
+
+            {/* Upload Card */}
+            <div className="glass-card">
+              <div className="card-header">
+                <div className="card-icon blue">📤</div>
+                <div>
+                  <div className="card-title">Upload Leaf Image</div>
+                  <div className="card-subtitle">JPG, PNG, or JPEG supported</div>
+                </div>
               </div>
-            </div>
-            <div className="upload-area">
-              {/* Drop Zone */}
+
+              {/* Drop zone */}
               <div
-                className={`drop-zone ${isDragging ? 'drag-over' : ''} ${imageUrl ? 'has-image' : ''}`}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onClick={!imageUrl ? () => fileInputRef.current?.click() : undefined}
+                className={`drop-area ${isDragging ? 'dragging' : ''} ${imageUrl ? 'has-image' : ''}`}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onDrop={onDrop}
+                onClick={() => !imageUrl && fileInputRef.current?.click()}
               >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/jpg,image/webp"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleFile(e.target.files[0])}
+                />
+
                 {imageUrl ? (
-                  <img src={imageUrl} alt="Leaf preview" className="preview-img" />
+                  <div className="preview-wrap">
+                    <img src={imageUrl} alt="Uploaded leaf" className="preview-img" />
+                    <div className="preview-info">
+                      <span className="preview-name">{imageFile.name}</span>
+                      <button className="btn-clear" onClick={(e) => { e.stopPropagation(); clearImage(); }}>✕ Remove</button>
+                    </div>
+                  </div>
                 ) : (
-                  <>
-                    <div className="upload-icon">🌿</div>
-                    <h3>Drop your leaf image here</h3>
-                    <p>
-                      or <span onClick={() => fileInputRef.current?.click()}>browse files</span> from your device
+                  <div className="drop-placeholder">
+                    <div className="drop-icon">🌿</div>
+                    <p>Drag & drop a leaf image here</p>
+                    <p className="drop-hint">
+                      or <span className="drop-link" onClick={() => fileInputRef.current?.click()}>browse files</span> from your device
                     </p>
-                  </>
+                  </div>
                 )}
               </div>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileInput}
-                style={{ display: 'none' }}
-                id="leaf-file-input"
-              />
-
-              {imageFile && (
-                <div className="file-info">
-                  <span className="file-name">{imageFile.name}</span>
-                  <button className="file-remove-btn" onClick={clearImage}>
-                    ✕ Remove
-                  </button>
-                </div>
+              {/* Format error */}
+              {error && error.type === 'format' && (
+                <div className="inline-error">⚠️ {error.message}</div>
               )}
 
+              {/* Analyze Button */}
               <button
-                className="analyze-btn"
-                onClick={handleAnalyze}
+                className="btn-analyze"
                 disabled={!imageFile || isAnalyzing}
-                id="analyze-btn"
+                onClick={analyzeLeaf}
               >
                 {isAnalyzing ? (
                   <>
-                    <div className="spinner" />
+                    <span className="spinner" />
                     Analyzing...
                   </>
                 ) : (
-                  <>
-                    🔬 Analyze Leaf
-                  </>
+                  <>🔬 Analyze Leaf</>
                 )}
               </button>
-            </div>
-          </div>
 
-          {/* Results Card */}
-          <div className="glass-card">
-            <div className="card-header">
-              <div className="card-icon red">🧪</div>
-              <div>
-                <div className="card-title">Diagnosis Result</div>
-                <div className="card-subtitle">AI-powered disease classification</div>
+              {/* Tips */}
+              <div className="tips-box">
+                <strong style={{ color: 'var(--text-secondary)' }}>✅ Valid inputs:</strong><br />
+                • Close-up photo of an actual tomato leaf<br />
+                • Natural lighting, sharp focus<br /><br />
+                <strong style={{ color: 'var(--text-secondary)' }}>❌ Invalid inputs:</strong><br />
+                • Advertisements, posters, or banners<br />
+                • Photos of objects, people, or buildings<br />
+                • Blank or near-white backgrounds
               </div>
             </div>
-            <div className="result-panel">
-              {/* No result yet */}
+
+            {/* Results Card */}
+            <div className="glass-card">
+              <div className="card-header">
+                <div className="card-icon green">🧪</div>
+                <div>
+                  <div className="card-title">Analysis Results</div>
+                  <div className="card-subtitle">Diagnosis & treatment recommendations</div>
+                </div>
+              </div>
+
+              {/* Loading state */}
+              {isAnalyzing && (
+                <div className="loading-state">
+                  <div className="loading-spinner-lg" />
+                  <h3>Analyzing Leaf...</h3>
+                  <p>Processing image features and running classification...</p>
+                </div>
+              )}
+
+              {/* Empty state */}
               {!result && !error && !isAnalyzing && (
                 <div className="empty-state">
                   <div className="empty-icon">🔎</div>
@@ -248,58 +280,32 @@ export default function App() {
                 </div>
               )}
 
-              {/* Loading */}
-              {isAnalyzing && (
-                <div className="empty-state">
-                  <div className="empty-icon" style={{ animation: 'orbFloat 2s ease-in-out infinite' }}>🌿</div>
-                  <h3>Analyzing your leaf...</h3>
-                  <p>Our AI is inspecting for signs of disease.</p>
-                </div>
-              )}
-
-              {/* Error: not a leaf */}
-              {error && error.type !== 'format' && !result && (
-                <div className="error-state">
-                  <div className="error-icon">⚠️</div>
-                  <h3>Analysis Failed</h3>
-                  <p>{error.message}</p>
-                </div>
-              )}
-
-              {/* Server not found error */}
-              {error && error.type === 'format' && (
-                <div className="error-state">
-                  <div className="error-icon">🚫</div>
-                  <h3>Invalid File</h3>
-                  <p>{error.message}</p>
-                </div>
-              )}
-
-              {/* Not a leaf detection */}
-              {result && !result.success && (
+              {/* Not-a-leaf error */}
+              {error && error.type === 'not_leaf' && !isAnalyzing && (
                 <div className="error-state">
                   <div className="error-icon">🚫</div>
                   <h3>Not a Tomato Leaf</h3>
-                  <p style={{ marginBottom: '12px' }}>{result.message}</p>
-                  <div style={{
-                    marginTop: '12px',
-                    padding: '10px 14px',
-                    background: 'rgba(255,255,255,0.04)',
-                    borderRadius: '10px',
-                    fontSize: '0.78rem',
+                  <p style={{ marginBottom: '12px' }}>{error.message}</p>
+                  <p style={{
+                    fontSize: '0.85rem',
                     color: 'var(--text-muted)',
                     textAlign: 'left',
-                    lineHeight: '1.7'
+                    lineHeight: 1.7,
                   }}>
-                    <strong style={{ color: 'var(--text-secondary)' }}>✅ Valid inputs:</strong><br />
-                    • Close-up photo of a tomato leaf<br />
-                    • Clear green, yellow, or diseased leaf<br />
-                    • Natural lighting, sharp focus<br /><br />
-                    <strong style={{ color: 'var(--text-secondary)' }}>❌ Invalid inputs:</strong><br />
-                    • Advertisements, posters, or banners<br />
-                    • Photos of objects, people, or buildings<br />
-                    • Blank or near-white backgrounds
-                  </div>
+                    <strong>Tips for a valid scan:</strong><br />
+                    • Use a close-up of an actual tomato leaf<br />
+                    • Avoid pictures of objects, ads, or blank images<br />
+                    • Ensure good lighting and focus
+                  </p>
+                </div>
+              )}
+
+              {/* Network / server error */}
+              {error && (error.type === 'network' || error.type === 'server') && !isAnalyzing && (
+                <div className="error-state">
+                  <div className="error-icon">⚠️</div>
+                  <h3>Connection Error</h3>
+                  <p>{error.message}</p>
                 </div>
               )}
 
@@ -375,6 +381,7 @@ export default function App() {
               </div>
             </div>
           )}
+
         </div>
       </main>
 
@@ -383,7 +390,7 @@ export default function App() {
         <div className="container">
           <p>🍅 TomatoAI — AI-Based Tomato Leaf Disease Detection</p>
           <p style={{ marginTop: '6px' }}>
-            Built with FastAPI + React · Xception Deep Learning Model
+            Built with FastAPI + React · Computer Vision Analysis Engine
           </p>
         </div>
       </footer>
