@@ -4,3 +4,5 @@ pillow>=10.0.0
 python-multipart>=0.0.12
 numpy>=1.26.0
 opencv-python-headless
+torch
+transformers
